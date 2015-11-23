@@ -15,23 +15,24 @@ import Data.Maybe
 
 import Auth.DbAuth
 import Db.Common
-import Domain.Book (Book(..))
-import qualified Domain.Book as DomainBook
+import Json.Book (Book(..))
+import qualified Json.Book as JsonBook
 import qualified Db.Book as DbBook
-import Domain.User (User(..))
-import qualified Domain.User as DomainUser
+import Json.User (User(..))
+import qualified Json.User as JsonUser
+import qualified Convert.BookConvertor as C
 
 
 createBook :: ConnectionPool -> String -> Maybe Text -> Book -> EitherT ServantErr IO ()
 createBook _ _ Nothing _ = return ()
 createBook pool salt (Just authHeader) book =
     withUser pool authHeader salt $ \user -> do
-        query pool $ insert (toRecord book {user_id = DomainUser.id user} :: DbBook.Book)
+        query pool $ insert (C.toRecord book {user_id = JsonUser.id user} :: DbBook.Book)
         return ()
 
 bookBelongsToUser :: MonadIO m => ConnectionPool -> User -> Int -> m Bool
-bookBelongsToUser _ (User {DomainUser.id = Nothing}) _ = return False -- No user id
-bookBelongsToUser pool (User {DomainUser.id = _id}) _bid = do
+bookBelongsToUser _ (User {JsonUser.id = Nothing}) _ = return False -- No user id
+bookBelongsToUser pool (User {JsonUser.id = _id}) _bid = do
     books <- query pool $ selectList [DbBook.BookUser_id ==. _id, DbBook.BookId ==. toKey _bid] []
     return $ length books == 1
 
@@ -40,13 +41,13 @@ updateBook _ _ Nothing _ = return ()
 updateBook pool salt (Just authHeader) book =
     withUser pool authHeader salt $ \user ->
         case book of
-            Book {DomainBook.id = Nothing} -> left $ err400 { errBody = "No id specified!" }
-            Book {DomainBook.id = Just _id} -> do
+            Book {JsonBook.id = Nothing} -> left $ err400 { errBody = "No id specified!" }
+            Book {JsonBook.id = Just _id} -> do
                 belongs <- bookBelongsToUser pool user _id
                 if belongs
                     then do
                         query pool $ replace (toKey _id :: Key DbBook.Book)
-                                             (toRecord book {user_id = DomainUser.id user} :: DbBook.Book)
+                                             (C.toRecord book {user_id = JsonUser.id user} :: DbBook.Book)
                         return ()
                     else return ()
 
@@ -67,7 +68,7 @@ showBook pool id = do
     book <- query pool $ selectFirst [DbBook.BookId ==. (toKey id :: Key DbBook.Book)] []
     return $ maybeBook book
     where maybeBook Nothing = Nothing
-          maybeBook (Just b) = toDomain b
+          maybeBook (Just b) = C.toJson b
 
 
 selectBooks :: ConnectionPool -> Maybe String  -> EitherT ServantErr IO [Book]
@@ -77,4 +78,4 @@ selectBooks pool (Just searchStr) =
         then return []
         else do
             books <- query pool $ selectList [Filter DbBook.BookTitle (Left $ concat ["%", searchStr, "%"]) (BackendSpecificFilter "like")] []
-            return $ map (\(Just b) -> b) $ filter isJust $ map toDomain books
+            return $ map (\(Just b) -> b) $ filter isJust $ map C.toJson books

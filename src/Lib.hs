@@ -20,7 +20,7 @@ import Auth.DbAuth
 import AppConfig
 import Db.Common
 
-import Domain.Book (Book(..))
+import Json.Book (Book(..))
 import Logic.Books
 
 configFileName :: String

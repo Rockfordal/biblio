@@ -13,20 +13,20 @@ import Auth.AuthHeader
 
 import Db.Common
 import qualified Db.User as Db
-import qualified Domain.User as Dom
+import qualified Json.User as J
+import qualified Convert.UserConvertor as C
 
-
-findUser :: ConnectionPool -> Text -> Text -> String -> IO (Maybe Dom.User)
+findUser :: ConnectionPool -> Text -> Text -> String -> IO (Maybe J.User)
 findUser pool login password salt = do
      users <- flip runSqlPool pool $
                        selectList [Db.UserLogin ==. unpack login, Db.UserPassword ==. encodePassword salt (unpack password)] []
      return $ oneUser users
      
-     where oneUser [user] = toDomain user
+     where oneUser [user] = C.toJson user
            oneUser _ = Nothing
 
 
-authHeaderToUser :: MonadIO m => ConnectionPool -> Text -> String -> m (Maybe Dom.User)
+authHeaderToUser :: MonadIO m => ConnectionPool -> Text -> String -> m (Maybe J.User)
 authHeaderToUser pool authHeader salt = do
     let auth = extractBasicAuth authHeader
     liftIO $ tryFindUser auth
@@ -34,7 +34,7 @@ authHeaderToUser pool authHeader salt = do
     where tryFindUser Nothing = return Nothing
           tryFindUser (Just (login, password)) = findUser pool login password salt
 
-withUser :: ConnectionPool -> Text -> String -> (Dom.User -> EitherT ServantErr IO a) -> EitherT ServantErr IO a
+withUser :: ConnectionPool -> Text -> String -> (J.User -> EitherT ServantErr IO a) -> EitherT ServantErr IO a
 withUser pool authHeader salt func = do
     maybeUser <- authHeaderToUser pool authHeader salt
     case maybeUser of

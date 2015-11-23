@@ -1,45 +1,28 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
-
-module Domain.Book where
+module Convert.BookConvertor where
 
 import Prelude hiding (id)
 import GHC.Generics (Generic)
 import qualified Data.Aeson as A
+
 import Database.Persist.MySQL
 import Data.Text
 
 import Db.Common
 import qualified Db.Book as D
+import Json.Book
 
-data Book = Book {
-    id       :: Maybe Int
-  , title    :: String
-  , author   :: String
-  , content  :: String
-  , year     :: Int
-  , user_id  :: Maybe Int
-  }
-  deriving (Show, Generic)
-
-instance A.ToJSON Book
-instance A.FromJSON Book
-
-
-instance DomainEntity Book D.Book where
-  toEntity domEntity =
+toEntity domEntity =
     case id domEntity of
         Nothing -> Nothing
         Just _id -> Just $ Entity (toSqlKey (fromIntegral _id) :: Key D.Book) $ toRecord domEntity
 
-  toRecord domEntity = D.Book (title domEntity)
+toRecord domEntity = D.Book (title domEntity)
                           (author domEntity)
                           (content domEntity)
                           (year domEntity)
                           (user_id domEntity)
 
-  toDomain (Entity key entity) =
+toJson (Entity key entity) =
     let vals = keyToValues key
     in processKeys vals
     
@@ -54,3 +37,4 @@ instance DomainEntity Book D.Book where
                                             (D.bookYear entity)
                                             (D.bookUser_id entity)                
           processKeys _ = Nothing
+

@@ -20,11 +20,14 @@ library
                      , Auth.DbAuth
                      , AppConfig
                      , Db.Common                     
-                     , Domain.User
+                     , Json.User
                      , Db.User
+                     , Convert.UserConvertor
                      , Logic.Books
-                     , Domain.Book
+                     , Json.Book
                      , Db.Book
+                     , Convert.BookConvertor
+                     
                      
   build-depends:       base >= 4.7 && < 5
                      , HTTP
