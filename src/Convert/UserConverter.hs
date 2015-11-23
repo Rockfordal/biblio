@@ -1,4 +1,4 @@
-module Convert.UserConvertor where
+module Convert.UserConverter where
 
 import Prelude hiding (id)
 import GHC.Generics (Generic)

@@ -20,7 +20,7 @@ import qualified Json.Book as JsonBook
 import qualified Db.Book as DbBook
 import Json.User (User(..))
 import qualified Json.User as JsonUser
-import qualified Convert.BookConvertor as C
+import qualified Convert.BookConverter as C
 
 
 createBook :: ConnectionPool -> String -> Maybe Text -> Book -> EitherT ServantErr IO ()

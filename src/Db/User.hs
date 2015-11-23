@@ -13,8 +13,6 @@ import Database.Persist.TH
 import Database.Persist
 import Database.Persist.Sql
 
-import qualified Data.Text as T
-
 share [mkPersist sqlSettings] [persistLowerCase|
 User
     login    String

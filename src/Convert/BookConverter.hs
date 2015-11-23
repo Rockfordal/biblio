@@ -1,4 +1,4 @@
-module Convert.BookConvertor where
+module Convert.BookConverter where
 
 import Prelude hiding (id)
 import GHC.Generics (Generic)

@@ -14,7 +14,7 @@ import Auth.AuthHeader
 import Db.Common
 import qualified Db.User as Db
 import qualified Json.User as J
-import qualified Convert.UserConvertor as C
+import qualified Convert.UserConverter as C
 
 findUser :: ConnectionPool -> Text -> Text -> String -> IO (Maybe J.User)
 findUser pool login password salt = do
