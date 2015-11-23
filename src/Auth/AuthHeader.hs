@@ -27,4 +27,4 @@ extractBasicAuth bs =
         decode (Just (u,p)) = Just (T8.decodeUtf8 u, T8.decodeUtf8 p)
 
 encodePassword :: String -> String -> String
-encodePassword salt pwd = md5s $ Str $ pwd ++ salt
+encodePassword salt pwd = md5s $ Str $ salt ++ pwd
