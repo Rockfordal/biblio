@@ -15,8 +15,6 @@ import Database.Persist.Sql
 
 import qualified Data.Text as T
 
--- import qualified Domain.Book as Dom
-
 share [mkPersist sqlSettings] [persistLowerCase|
 Book
     title    String
