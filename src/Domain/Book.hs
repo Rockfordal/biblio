@@ -31,12 +31,7 @@ instance DomainEntity Book D.Book where
   toEntity domEntity =
     case id domEntity of
         Nothing -> Nothing
-        Just _id -> Just $ Entity (toSqlKey (fromIntegral _id) :: Key D.Book) $
-                                 D.Book (title domEntity)
-                                     (author domEntity)
-                                     (content domEntity)
-                                     (year domEntity)
-                                     (user_id domEntity)
+        Just _id -> Just $ Entity (toSqlKey (fromIntegral _id) :: Key D.Book) $ toRecord domEntity
 
   toRecord domEntity = D.Book (title domEntity)
                           (author domEntity)

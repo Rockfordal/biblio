@@ -41,6 +41,7 @@ type API = "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post
       :<|> "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put '[PlainText] ()
       :<|> "book" :> Header "Authorization" Text :> Capture "id" Int :> Delete '[PlainText] ()
       :<|> "book" :> Capture "id" Int :> Get '[JSON] (Maybe Book)
+      :<|> "book" :> QueryParam "searchStr" String :> Get '[JSON] [Book]
 
 type API' = API :<|> Raw
 
@@ -56,6 +57,7 @@ server pool salt = createBook pool salt
               :<|> updateBook pool salt
               :<|> deleteBook pool salt
               :<|> showBook pool
+              :<|> selectBooks pool
 
 server' :: ConnectionPool -> String -> Server API'
 server' pool salt = server pool salt

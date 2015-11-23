@@ -24,6 +24,7 @@ Book
     content  String
     year     Int
     user_id  Int Maybe
+    deriving Eq
     deriving Show
     deriving Generic
 |]

@@ -9,7 +9,9 @@ import Database.Persist.MySQL
 import Servant
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class
-import Data.Text hiding (replace, length)
+import Data.Text hiding (replace, length, any, concat, map, filter)
+import Data.Char
+import Data.Maybe
 
 import Auth.DbAuth
 import Db.Common
@@ -67,3 +69,12 @@ showBook pool id = do
     where maybeBook Nothing = Nothing
           maybeBook (Just b) = toDomain b
 
+
+selectBooks :: ConnectionPool -> Maybe String  -> EitherT ServantErr IO [Book]
+selectBooks _ Nothing = return []
+selectBooks pool (Just searchStr) =
+    if any (not . isAlphaNum) searchStr
+        then return []
+        else do
+            books <- query pool $ selectList [Filter DbBook.BookTitle (Left $ concat ["%", searchStr, "%"]) (BackendSpecificFilter "like")] []
+            return $ map (\(Just b) -> b) $ filter isJust $ map toDomain books
