@@ -11,18 +11,17 @@ import Db.Common
 import qualified Db.Book as D
 import Json.Book
 
+toEntity :: Book -> Maybe (Entity D.Book)
 toEntity domEntity =
     case id domEntity of
         Nothing -> Nothing
         Just _id -> Just $ Entity (toSqlKey (fromIntegral _id) :: Key D.Book) $ toRecord domEntity
 
-toRecord domEntity = D.Book (title domEntity)
-                          (author domEntity)
-                          (content domEntity)
-                          (year domEntity)
-                          (user_id domEntity)
+toRecord :: Book -> D.Book
+toRecord (Book _id _title _author _content _year _user_id) = D.Book _title _author _content _year _user_id
 
-toJson (Entity key entity) =
+toJson :: Entity D.Book -> Maybe Book
+toJson (Entity key (D.Book _title _author _content _year _user_id)) =
     let vals = keyToValues key
     in processKeys vals
     
@@ -30,11 +29,6 @@ toJson (Entity key entity) =
             let eitherId = fromPersistValue pval :: Either Text Int
             in case eitherId of
                 Left _ -> Nothing
-                Right _id -> Just $ Book (Just $ fromIntegral _id)
-                                            (D.bookTitle entity)
-                                            (D.bookAuthor entity)
-                                            (D.bookContent entity)
-                                            (D.bookYear entity)
-                                            (D.bookUser_id entity)                
+                Right _id -> Just $ Book (Just $ fromIntegral _id) _title _author _content _year _user_id
           processKeys _ = Nothing
 

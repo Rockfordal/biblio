@@ -12,6 +12,7 @@ import Control.Monad.IO.Class
 import Data.Text hiding (replace, length, any, concat, map, filter)
 import Data.Char
 import Data.Maybe
+import Data.Word
 
 import Auth.DbAuth
 import Db.Common
@@ -71,11 +72,19 @@ showBook pool id = do
           maybeBook (Just b) = C.toJson b
 
 
-selectBooks :: ConnectionPool -> Maybe String  -> EitherT ServantErr IO [Book]
-selectBooks _ Nothing = return []
-selectBooks pool (Just searchStr) =
+selectBooks :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> EitherT ServantErr IO [Book]
+selectBooks _ Nothing _ _ _= return []
+selectBooks _ _ Nothing _ _ = return []
+selectBooks _ _ _ Nothing _ = return []
+selectBooks _ _ _ _ Nothing = return []
+selectBooks pool (Just field) (Just searchStr) (Just offset) (Just limit) = do
+    let entityField = case field of
+                        "title" -> DbBook.BookTitle
+                        "author" -> DbBook.BookAuthor
+                        "content" -> DbBook.BookContent
     if any (not . isAlphaNum) searchStr
         then return []
         else do
-            books <- query pool $ selectList [Filter DbBook.BookTitle (Left $ concat ["%", searchStr, "%"]) (BackendSpecificFilter "like")] []
+            books <- query pool $ selectList [Filter entityField (Left $ concat ["%", searchStr, "%"]) (BackendSpecificFilter "like")]
+                                            [OffsetBy $ fromIntegral offset, LimitTo $ fromIntegral limit]
             return $ map (\(Just b) -> b) $ filter isJust $ map C.toJson books

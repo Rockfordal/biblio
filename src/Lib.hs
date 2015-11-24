@@ -10,6 +10,7 @@ module Lib
 import Network.Wai.Handler.Warp
 import qualified Data.Configurator as C
 import Data.Text
+import Data.Word
 import Servant
 
 import Database.Persist.MySQL
@@ -41,7 +42,7 @@ type API = "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post
       :<|> "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put '[PlainText] ()
       :<|> "book" :> Header "Authorization" Text :> Capture "id" Int :> Delete '[PlainText] ()
       :<|> "book" :> Capture "id" Int :> Get '[JSON] (Maybe Book)
-      :<|> "book" :> QueryParam "searchStr" String :> Get '[JSON] [Book]
+      :<|> "book" :> QueryParam "searchStr" String :> QueryParam "offset" Word16 :> QueryParam "limit" Word16 :> Get '[JSON] [Book]
 
 type API' = API :<|> Raw
 

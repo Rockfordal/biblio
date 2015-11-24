@@ -11,15 +11,17 @@ import Db.Common
 import qualified Db.User as D
 import Json.User
 
-
+toEntity :: User -> Maybe (Entity D.User)
 toEntity (User maybeId _login _password) =
     case maybeId of
         Nothing -> Nothing
         Just _id -> Just $ Entity (toSqlKey (fromIntegral _id) :: Key D.User) $
                                 D.User _login _password
 
+toRecord :: User -> D.User
 toRecord (User _ _login _password) = D.User _login _password
 
+toJson :: Entity D.User -> Maybe User
 toJson (Entity key (D.User _login _password)) =
     let vals = keyToValues key
     in processKeys vals
