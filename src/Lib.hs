@@ -60,8 +60,7 @@ type API = "helloUser" :> Header "Authorization" Text :> Get '[PlainText] Text
       :<|> "hello" :> Get '[PlainText] Text
       :<|> "book" :> Capture "id" Int :> Get '[JSON] (Maybe Book)
       :<|> "book" :> QueryParam "searchField" String :> QueryParam "searchStr" String :> QueryParam "offset" Word16 :> QueryParam "limit" Word16 :> Get '[JSON] [Book]
-      :<|> "allBooks" :> Get '[JSON] [Book]
-      -- :<|> "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post '[PlainText] ()
+      :<|> "books" :> Get '[JSON] [Book]
       :<|> "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post '[PlainText] ()
       :<|> "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put '[PlainText] ()
       :<|> "book" :> Header "Authorization" Text :> Capture "id" Int :> Delete '[PlainText] ()
