@@ -1,0 +1,20 @@
+{
+  "name": "static",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-console": "^1.0.0",
+    "purescript-affjax": "^1.1.0",
+    "purescript-argonaut": "^1.0.0",
+    "purescript-pux": "^5.0.1",
+    "react": "^15.1.0",
+    "Materialize": "materialize#^0.97.6"
+  },
+  "devDependencies": {
+    "purescript-psci-support": "^1.0.0"
+  }
+}
