@@ -1,0 +1,29 @@
+trurl new project Books Servant
+mv Books books
+cd books
+stack setup
+stack build
+
+cd src/Db
+trurl new file Book.hs srv-db-entity 'entity:Book, fields:[title#String, author#String, content#String]'
+
+cd ../Json
+trurl new file Book.hs srv-json-entity 'entity:Book, fields:[title#String, author#String, content#String]'
+
+cd ../Convert
+trurl new file BookConverter.hs srv-converter  'entity:Book, fields:[title#String, author#String, content#String]'
+
+cd ../Logic
+trurl new file Books.hs srv-crud  'entity:Book, fields:[title#String, author#String, content#String]'
+-- rename Logic.Book to Logic.Books
+
+-- Books.cabal   exposed modules:
+                     , Db.Book
+                     , Json.Book
+                     , Convert.BookConverter
+                     , Logic.Books
+
+-- blev tvungen ändra Logic.Books och ta bort user-auth-grejjer och ändra allbooks till selectbooks med just i Lib
+
+trurl new project static purs-stub
+
