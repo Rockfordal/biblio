@@ -1,7 +1,6 @@
 module Main where
 
 import Prelude ((<<<), bind)
-import Pux (start, renderToDOM)
 
 import Pux (start, fromSimple, renderToDOM)
 import Pux.Router (sampleUrl)
@@ -19,10 +18,8 @@ main = do
   app <- start
     { initialState: init
     , update: fromSimple update
-    -- , update:       update
     , view: view
     , inputs: [routeSignal]
-    -- , inputs:       []
     }
 
   renderToDOM "#app" app.html
