@@ -47,6 +47,7 @@ library
                      , wai
                      , wai-middleware-static
                      , wai-extra
+                     , wai-cors
                      , warp
                      , monad-logger
                      , MissingH

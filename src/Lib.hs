@@ -8,6 +8,7 @@ module Lib
     ) where
 
 import Network.Wai.Handler.Warp
+import Network.Wai.Middleware.Cors
 import qualified Data.Configurator as C
 import Data.Text
 import Data.Word
@@ -27,6 +28,7 @@ import Control.Monad.Trans.Either
 
 import Logic.Books
 import Json.Book
+
 
 
 configFileName :: String
@@ -102,4 +104,4 @@ mainFunc = do
         Nothing -> putStrLn $ "Can't parse \"" ++ configFileName ++ "\" file, terminating!"
         Just conf -> do
             pool <- runStdoutLoggingT $ createMySQLPool (connectInfo conf) (fromIntegral $ poolSize conf)
-            run (fromIntegral $ appPort conf) (serve api' (server' pool (dbSalt conf)))
+            run (fromIntegral $ appPort conf) $ simpleCors $ serve api' (server' pool (dbSalt conf))
