@@ -9,6 +9,7 @@ data User = User {
     id       :: Maybe Int
   , login    :: String
   , password :: String
+  , role     :: String
   }
   deriving (Show, Generic)
 

@@ -1,6 +1,7 @@
 module RoutingExample.Routes where
 
 import Prelude (($), (<$>))
+import Data.Functor ((<$))
 import Control.Alt ((<|>))
 import Control.Apply ((<*), (*>))
 import Data.Maybe (fromMaybe)

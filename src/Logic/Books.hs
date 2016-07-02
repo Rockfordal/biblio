@@ -62,7 +62,6 @@ deleteBook pool salt (Just authHeader) _id =
                 query pool $ delete (toKey _id :: Key DbBook.Book)
                 return ()
             else return ()
-        
 
 showBook :: ConnectionPool -> Int -> EitherT ServantErr IO (Maybe Book)
 showBook pool id = do
@@ -70,7 +69,6 @@ showBook pool id = do
     return $ maybeBook book
     where maybeBook Nothing = Nothing
           maybeBook (Just b) = C.toJson b
-
 
 selectBooks :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> EitherT ServantErr IO [Book]
 selectBooks _ Nothing _ _ _= return []

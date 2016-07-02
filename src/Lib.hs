@@ -7,6 +7,7 @@ module Lib
     ( mainFunc
     ) where
 
+import qualified Network.Wai as WAI
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Cors
 import qualified Data.Configurator as C
@@ -27,8 +28,9 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Either
 
 import Logic.Books
+import Logic.Users
 import Json.Book
-
+import Json.User
 
 
 configFileName :: String
@@ -63,9 +65,10 @@ type API = "helloUser" :> Header "Authorization" Text :> Get '[PlainText] Text
       :<|> "book" :> Capture "id" Int :> Get '[JSON] (Maybe Book)
       :<|> "book" :> QueryParam "searchField" String :> QueryParam "searchStr" String :> QueryParam "offset" Word16 :> QueryParam "limit" Word16 :> Get '[JSON] [Book]
       :<|> "books" :> Get '[JSON] [Book]
-      :<|> "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post '[PlainText] ()
-      :<|> "book" :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put '[PlainText] ()
-      :<|> "book" :> Header "Authorization" Text :> Capture "id" Int :> Delete '[PlainText] ()
+      :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post '[PlainText] ()
+      :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put '[PlainText] ()
+      :<|> "book"  :> Header "Authorization" Text :> Capture "id" Int :> Delete '[PlainText] ()
+      :<|> "users" :> Header "Authorization" Text :> Get '[JSON] [User]
 
 
 type API' = API :<|> Raw
@@ -86,6 +89,7 @@ server pool salt = helloUser pool salt
               :<|> createBook pool salt
               :<|> updateBook pool salt
               :<|> deleteBook pool salt
+              :<|> selectUsersAuth pool salt
 
 
 server' :: ConnectionPool -> String -> Server API'
@@ -94,6 +98,24 @@ server' pool salt = server pool salt
 
 
 ---------------------------------------
+
+myCors :: WAI.Middleware
+myCors = cors $ const (Just myResourcePolicy)
+
+myResourcePolicy :: CorsResourcePolicy
+myResourcePolicy =
+    CorsResourcePolicy
+        -- { Corsorigins = Nothing -- gives you /*
+        { corsOrigins = Just (["http://127.0.0.1:8000", "null", "file://"], True)
+        , corsMethods = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTION"]
+        , corsRequestHeaders = simpleHeaders -- Adds "Content-Type" to defaults
+        , corsExposedHeaders = Nothing
+        , corsMaxAge = Nothing
+        , corsVaryOrigin = False
+        , corsRequireOrigin = False
+        , corsIgnoreFailures = False
+        }
+
 
 mainFunc :: IO ()
 mainFunc = do
@@ -104,4 +126,5 @@ mainFunc = do
         Nothing -> putStrLn $ "Can't parse \"" ++ configFileName ++ "\" file, terminating!"
         Just conf -> do
             pool <- runStdoutLoggingT $ createMySQLPool (connectInfo conf) (fromIntegral $ poolSize conf)
-            run (fromIntegral $ appPort conf) $ simpleCors $ serve api' (server' pool (dbSalt conf))
+            -- run (fromIntegral $ appPort conf) $ simpleCors $ serve api' (server' pool (dbSalt conf))
+            run (fromIntegral $ appPort conf) $ myCors $ serve api' (server' pool (dbSalt conf))

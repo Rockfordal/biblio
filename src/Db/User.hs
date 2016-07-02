@@ -17,6 +17,7 @@ share [mkPersist sqlSettings] [persistLowerCase|
 User
     login    String
     password String
+    role     String
     deriving Show
     deriving Generic
 |]

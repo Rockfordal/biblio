@@ -24,6 +24,7 @@ library
                      , Db.User
                      , Convert.UserConverter
                      , Logic.Books
+                     , Logic.Users
                      , Json.Book
                      , Db.Book
                      , Convert.BookConverter

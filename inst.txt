@@ -15,6 +15,7 @@ trurl new file BookConverter.hs srv-converter  'entity:Book, fields:[title#Strin
 
 cd ../Logic
 trurl new file Books.hs srv-crud  'entity:Book, fields:[title#String, author#String, content#String]'
+trurl new file Users.hs srv-crud  'entity:User, fields:[login#String, password#String]'
 -- rename Logic.Book to Logic.Books
 
 -- Books.cabal   exposed modules:
@@ -26,4 +27,3 @@ trurl new file Books.hs srv-crud  'entity:Book, fields:[title#String, author#Str
 -- blev tvungen ändra Logic.Books och ta bort user-auth-grejjer och ändra allbooks till selectbooks med just i Lib
 
 trurl new project static purs-stub
-
