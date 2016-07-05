@@ -5,7 +5,8 @@ import Data.Text
 import Database.Persist.MySQL
 import Database.Persist.Sql
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Either
+import Control.Monad.Error.Class (throwError)
+import Control.Monad.Trans.Except (ExceptT)
 import Servant.API
 import Servant
 
@@ -21,7 +22,7 @@ findUser pool login password salt = do
      users <- flip runSqlPool pool $
                        selectList [Db.UserLogin ==. unpack login, Db.UserPassword ==. encodePassword salt (unpack password)] []
      return $ oneUser users
-     
+
      where oneUser [user] = C.toJson user
            oneUser _ = Nothing
 
@@ -34,9 +35,16 @@ authHeaderToUser pool authHeader salt = do
     where tryFindUser Nothing = return Nothing
           tryFindUser (Just (login, password)) = findUser pool login password salt
 
-withUser :: ConnectionPool -> Text -> String -> (J.User -> EitherT ServantErr IO a) -> EitherT ServantErr IO a
+withUser :: ConnectionPool -> Text -> String -> (J.User -> ExceptT ServantErr IO a) -> ExceptT ServantErr IO a
 withUser pool authHeader salt func = do
     maybeUser <- authHeaderToUser pool authHeader salt
     case maybeUser of
-        Nothing -> left $ err403 { errBody = "No user found" }
+        Nothing -> throwError $ err403 { errBody = "No user found" }
+        Just user -> func user
+
+withUser2 :: ConnectionPool -> Text -> String -> (J.User -> ExceptT ServantErr IO a) -> ExceptT ServantErr IO a
+withUser2 pool authHeader salt func = do
+    maybeUser <- authHeaderToUser pool authHeader salt
+    case maybeUser of
+        Nothing -> throwError $ err403 { errBody = "No user found" }
         Just user -> func user

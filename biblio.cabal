@@ -55,6 +55,7 @@ library
                      , transformers
                      , servant
                      , servant-server
+                     , mtl
                      , either
   
   default-language:    Haskell2010

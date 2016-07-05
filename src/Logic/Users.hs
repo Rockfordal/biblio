@@ -7,7 +7,8 @@ module Logic.Users where
 
 import Database.Persist.MySQL
 import Servant
-import Control.Monad.Trans.Either
+import Control.Monad.Trans.Except (ExceptT)
+import Control.Monad.Error.Class (throwError)
 import Control.Monad.IO.Class
 import Data.Text hiding (replace, length, any, concat, map, filter)
 import Data.Char
@@ -24,7 +25,7 @@ import qualified Json.User as JsonUser
 import qualified Convert.UserConverter as C
 
 
-createUser :: ConnectionPool -> String -> Maybe Text -> User -> EitherT ServantErr IO ()
+createUser :: ConnectionPool -> String -> Maybe Text -> User -> ExceptT ServantErr IO ()
 createUser _ _ Nothing _ = return ()
 createUser pool salt (Just authHeader) entity =
     withUser pool authHeader salt $ \user -> do
@@ -37,12 +38,12 @@ createUser pool salt (Just authHeader) entity =
 --     entitys <- query pool $ selectList [DbUser.UserUser_id ==. _id, DbUser.UserId ==. toKey _bid] []
 --     return $ length entitys == 1
 
-updateUser :: ConnectionPool -> String -> Maybe Text -> User -> EitherT ServantErr IO ()
+updateUser :: ConnectionPool -> String -> Maybe Text -> User -> ExceptT ServantErr IO ()
 updateUser _ _ Nothing _ = return ()
 updateUser pool salt (Just authHeader) entity =
     withUser pool authHeader salt $ \user ->
         case entity of
-            User {JsonUser.id = Nothing} -> left $ err400 { errBody = "No id specified!" }
+            User {JsonUser.id = Nothing} -> throwError $ err400 { errBody = "No id specified!" }
             User {JsonUser.id = Just _id} -> do
                 -- belongs <- entityBelongsToUser pool user _id
                 -- if belongs
@@ -52,7 +53,7 @@ updateUser pool salt (Just authHeader) entity =
                         return ()
                     -- else return ()
 
-deleteUser :: ConnectionPool -> String -> Maybe Text -> Int -> EitherT ServantErr IO ()
+deleteUser :: ConnectionPool -> String -> Maybe Text -> Int -> ExceptT ServantErr IO ()
 deleteUser _ _ Nothing _ = return ()
 deleteUser pool salt (Just authHeader) _id =
     withUser pool authHeader salt $ \user -> do
@@ -63,7 +64,7 @@ deleteUser pool salt (Just authHeader) _id =
                 return ()
             -- else return ()
 
-showUser :: ConnectionPool -> Int -> EitherT ServantErr IO (Maybe User)
+showUser :: ConnectionPool -> Int -> ExceptT ServantErr IO (Maybe User)
 showUser pool id = do
     entity <- query pool $ selectFirst [DbUser.UserId ==. (toKey id :: Key DbUser.User)] []
     return $ maybeUser entity
@@ -71,8 +72,8 @@ showUser pool id = do
           maybeUser (Just b) = C.toJson b
 
 
-selectUsersAuth :: ConnectionPool -> String -> Maybe Text -> EitherT ServantErr IO [User]
-selectUsersAuth pool salt Nothing = left $ err403 { errBody = "No Authorization header found!" }
+selectUsersAuth :: ConnectionPool -> String -> Maybe Text -> ExceptT ServantErr IO [User]
+selectUsersAuth pool salt Nothing = throwError $ err403 { errBody = "No Authorization header found!" }
 selectUsersAuth pool salt (Just authHeader) =
     withUser pool authHeader salt $ \user -> do
         -- liftIO $ print user
@@ -86,7 +87,7 @@ selectUsersAuth pool salt (Just authHeader) =
           return $ map (\(Just b) -> b) $ filter isJust $ map C.toJson entitys
 
 
-selectUsers :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> EitherT ServantErr IO [User]
+selectUsers :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> ExceptT ServantErr IO [User]
 selectUsers _ Nothing _ _ _= return []
 selectUsers _ _ Nothing _ _ = return []
 selectUsers _ _ _ Nothing _ = return []
