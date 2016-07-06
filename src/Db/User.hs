@@ -10,8 +10,8 @@ module Db.User where
 
 import GHC.Generics
 import Database.Persist.TH
-import Database.Persist
-import Database.Persist.Sql
+-- import Database.Persist
+-- import Database.Persist.Sql
 
 share [mkPersist sqlSettings] [persistLowerCase|
 User
