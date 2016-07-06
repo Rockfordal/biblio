@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Author name here
 maintainer:          example@example.com
-copyright:           2010 Author Here
+copyright:           2016 Author Here
 category:            Web
 build-type:          Simple
 -- extra-source-files:
@@ -28,9 +28,12 @@ library
                      , Json.Book
                      , Db.Book
                      , Convert.BookConverter
+                     , Ware
+                     , Typer
                      
                      
   build-depends:       base >= 4.7 && < 5
+                     , Cabal
                      , HTTP
                      , word8
                      , aeson
@@ -55,8 +58,13 @@ library
                      , transformers
                      , servant
                      , servant-server
+                     , servant-js
+                     , servant-docs
+                     -- , servant-client
+                     , lackey
                      , mtl
                      , either
+                     , filepath
   
   default-language:    Haskell2010
 

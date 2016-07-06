@@ -5,9 +5,10 @@
 
 module Logic.Books where
 
+import Prelude hiding (id)
 import Database.Persist.MySQL
 import Servant
-import Control.Monad.Trans.Except (ExceptT)
+-- import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.IO.Class
 import Data.Text hiding (replace, length, any, concat, map, filter)
@@ -20,16 +21,18 @@ import Db.Common
 import Json.Book (Book(..))
 import qualified Json.Book as JsonBook
 import qualified Db.Book as DbBook
-import Json.User (User(..))
+import Json.User (User(User)) -- (User(..))
 import qualified Json.User as JsonUser
 import qualified Convert.BookConverter as C
+import Typer
 
 
-createBook :: ConnectionPool -> String -> Maybe Text -> Book -> ExceptT ServantErr IO String
+createBook :: ConnectionPool -> String -> Maybe Text -> Book -> Handler [Char]
 createBook _ _ Nothing _ = return "nej"
 createBook pool salt (Just authHeader) book =
     withUser pool authHeader salt $ \user -> do
-        query pool $ insert (C.toRecord book {user_id = JsonUser.id user} :: DbBook.Book)
+        -- query pool $ insert (C.toRecord book {user_id = JsonUser.id user} :: DbBook.Book)
+        _ <- ($) query pool $ insert (C.toRecord book {user_id = JsonUser.id user} :: DbBook.Book)
         return "ja"
 
 bookBelongsToUser :: MonadIO m => ConnectionPool -> User -> Int -> m Bool
@@ -38,7 +41,7 @@ bookBelongsToUser pool (User {JsonUser.id = _id}) _bid = do
     books <- query pool $ selectList [DbBook.BookUser_id ==. _id, DbBook.BookId ==. toKey _bid] []
     return $ length books == 1
 
-updateBook :: ConnectionPool -> String -> Maybe Text -> Book -> ExceptT ServantErr IO String
+updateBook :: ConnectionPool -> String -> Maybe Text -> Book -> Handler [Char]
 updateBook _ _ Nothing _ = return "nej"
 updateBook pool salt (Just authHeader) book =
     withUser pool authHeader salt $ \user ->
@@ -53,28 +56,33 @@ updateBook pool salt (Just authHeader) book =
                         return "ja"
                     else return "nej"
 
-deleteBook :: ConnectionPool -> String -> Maybe Text -> Int -> ExceptT ServantErr IO String
--- deleteBook _ _ Nothing _ = return ()
-deleteBook _ _ Nothing _ = return "nej"
+-- nej :: Text
+-- nej = "nej"
+
+ja :: String
+ja = "ja"
+
+deleteBook :: ConnectionPool -> String -> Maybe Text -> Int -> Handler String
+deleteBook _ _ Nothing _ = return ja -- nej
 deleteBook pool salt (Just authHeader) _id =
     withUser pool authHeader salt $ \user -> do
         belongs <- bookBelongsToUser pool user _id
         if belongs
             then do
                 query pool $ delete (toKey _id :: Key DbBook.Book)
-                -- return ()
-                return "ja"
-            -- else return ()
+                return ja
             else throwError $ err400 { errBody = "deleteBook error"}
 
-showBook :: ConnectionPool -> Int -> ExceptT ServantErr IO (Maybe Book)
-showBook pool id = do
-    book <- query pool $ selectFirst [DbBook.BookId ==. (toKey id :: Key DbBook.Book)] []
+
+showBook :: ConnectionPool -> Int -> Handler (Maybe Book)
+showBook pool bookid = do
+    -- book <- query pool $ selectFirst [DbBook.BookId ==. (toKey id :: Key DbBook.Book)] []
+    book <- query pool $ selectFirst [DbBook.BookId ==. (toKey bookid :: Key DbBook.Book)] []
     return $ maybeBook book
     where maybeBook Nothing = Nothing
           maybeBook (Just b) = C.toJson b
 
-selectBooks :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> ExceptT ServantErr IO [Book]
+selectBooks :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> Handler [Book]
 selectBooks _ Nothing _ _ _= return []
 selectBooks _ _ Nothing _ _ = return []
 selectBooks _ _ _ Nothing _ = return []

@@ -3,22 +3,31 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Lib
-    ( mainFunc
-    ) where
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+module Lib ( mainFunc) where
 
-import Data.ByteString (ByteString)
-import Network.Wai.Middleware.AddHeaders (addHeaders)
-import Network.HTTP.Types.Header (hAuthorization)
-import Network.Wai (Middleware)
 import Network.Wai.Handler.Warp
-import Network.Wai.Middleware.Cors (CorsResourcePolicy(..), cors, corsMethods, corsRequestHeaders, corsOrigins, corsExposedHeaders, corsOrigins, corsRequireOrigin, corsIgnoreFailures, corsMaxAge, corsVaryOrigin, simpleHeaders)
 import qualified Data.Configurator as C
 import Data.Text
 import Data.Word
--- import System.FilePath
+-- import Data.Aeson
+-- import Data.Aeson.TH
+-- import GHC.Generics
+
+import System.FilePath
 import Servant
--- import Servant.JS
+import Servant.Docs -- (markdown, docs)
+-- import Servant.Docs.Internal -- (ToSample)
+import Servant.JS (writeJSForAPI)
+import qualified Lackey
+
+-- import Servant.Swagger
+-- import Servant.Swagger.UI
 -- import Servant.API.ContentTypes
 -- import Servant.Client
 
@@ -38,7 +47,8 @@ import Logic.Books
 import Logic.Users
 import Json.Book
 import Json.User
-
+import Ware
+import Typer
 
 configFileName :: String
 configFileName = "application.conf"
@@ -52,96 +62,113 @@ connectInfo conf = defaultConnectInfo { connectUser = dbUser conf
                                       , connectPort = dbPort conf
                                       }
 
+-- helloUser :: ConnectionPool -> String -> Maybe Text -> ExceptT ServantErr IO Text
+-- -- helloUser :: ConnectionPool -> String -> Maybe Text -> Handler HelloMessage
+-- helloUser pool salt Nothing = throwError $ err403 { errBody = "No Authorization header found!" }
+-- helloUser pool salt (Just authHeader) =
+--     withUser pool authHeader salt $ \user -> do
+--         liftIO $ print user
+--         return $ pack $ show user
 
-helloUser :: ConnectionPool -> String -> Maybe Text -> ExceptT ServantErr IO Text
-helloUser pool salt Nothing = throwError $ err403 { errBody = "No Authorization header found!" }
-helloUser pool salt (Just authHeader) =
-    withUser pool authHeader salt $ \user -> do
-        liftIO $ print user
-        return $ pack $ show user
+hello :: Maybe String -> Handler HelloMessage
+hello mname = return . HelloMessage $ case mname of
+  Nothing -> "Hello, anonymous coward"
+  Just n  -> "Hello from Biblio Servant, " ++ n
 
-hello :: ExceptT ServantErr IO Text
-hello  = return "Hello, World!"
+type UserAPI = "users" :> Header "Authorization" Text :> Get '[JSON] [User]
+               :<|> "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
+               -- "hello" :> Get '[PlainText] Text
+               -- :<|> "helloUser" :> Header "Authorization" Text :> Get '[PlainText] Text
 
+type BookAPI = "book"  :> Capture "id" Int :> Get '[JSON] (Maybe Book)
+          :<|> "book"  :> QueryParam "searchField" String :> QueryParam "searchStr" String
+                       :> QueryParam "offset" Word16 :> QueryParam "limit" Word16 :> Get '[JSON] [Book]
+          :<|> "books" :> Get '[JSON] [Book]
+          -- :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post   '[PlainText] [Char]
+          -- :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put    '[PlainText] [Char]
+          -- :<|> "book"  :> Header "Authorization" Text :> Capture "id"     Int :> Delete '[PlainText] String
 
--- type GetEntity path kind
---   = path :> Capture "id" Int :> Get '[JSON] kind -- (Maybe kind)
+userapi :: Proxy UserAPI
+userapi = Proxy
 
+bookapi :: Proxy BookAPI
+bookapi = Proxy
 
-type API = "hello" :> Get '[PlainText] Text
-      :<|> "helloUser" :> Header "Authorization" Text :> Get '[PlainText] Text
-      :<|> "book" :> Capture "id" Int :> Get '[JSON] (Maybe Book)
-      -- :<|> GetEntity "book" Book
-      :<|> "book" :> QueryParam "searchField" String :> QueryParam "searchStr" String :> QueryParam "offset" Word16 :> QueryParam "limit" Word16 :> Get '[JSON] [Book]
-      :<|> "books" :> Get '[JSON] [Book]
-      :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post   '[PlainText] [Char]
-      :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put    '[PlainText] [Char]
-      :<|> "book"  :> Header "Authorization" Text :> Capture "id"     Int :> Delete '[PlainText] [Char]
-      :<|> "users" :> Header "Authorization" Text                         :> Get    '[JSON]      [User]
+type MainAPI =      UserAPI
+           :<|> BookAPI
+           :<|> Raw
 
+mainapi :: Proxy MainAPI
+mainapi = Proxy
 
-type API' = API :<|> Raw
+userServer :: ConnectionPool -> String -> Server UserAPI
+userServer pool salt = selectUsersAuth pool salt
+                  :<|> hello
+              -- :<|> helloUser pool salt
 
-api :: Proxy API
-api = Proxy
+bookServer :: ConnectionPool -> String -> Server BookAPI
+bookServer pool salt = showBook pool
+                  :<|> selectBooks pool
+                  :<|> (selectBooks pool (Just "title") (Just "") (Just 0) (Just 10))
+                  -- :<|> createBook pool salt
+                  -- :<|> updateBook pool salt
+                  -- :<|> deleteBook pool salt
 
-api' :: Proxy API'
-api' = Proxy
+server :: ConnectionPool -> String -> Server MainAPI
+server pool salt = userServer pool salt
+              :<|> bookServer pool salt
+              :<|> serveDirectory "static"
 
-server :: ConnectionPool -> String -> Server API
-server pool salt = hello
-      :<|> helloUser pool salt
-      :<|> showBook pool
-      :<|> selectBooks pool
-      :<|> (selectBooks pool (Just "title") (Just "") (Just 0) (Just 10))
-      :<|> createBook pool salt
-      :<|> updateBook pool salt
-      :<|> deleteBook pool salt
-      :<|> selectUsersAuth pool salt
+instance ToSample Book where
+  toSamples _ = singleSample Book { Json.Book.id = Just 1, title = "hej", author = "jag", content = "innehåll", year = 2004, user_id = Nothing }
 
-server' :: ConnectionPool -> String -> Server API'
-server' pool salt = server pool salt
-      :<|> serveDirectory "static"
+instance ToParam (QueryParam "limit" Word16) where
+  toParam _ = DocQueryParam "limit" ["10", "20"] "Hejlimit" Normal -- List | Flag
 
+instance ToParam (QueryParam "offset" Word16) where
+  toParam _ = DocQueryParam "offset" ["0", "10"] "Hejoffset" Normal -- List | Flag
 
--- static :: FilePath
--- static = "static"
+instance ToParam (QueryParam "searchField" [Char]) where
+  toParam _ = DocQueryParam "searchField" ["title", "author"] "Hejsearchfield" Normal -- List | Flag
 
--- js :: IO ()
--- js = writeJSForAPI pointApi vanillaJS (static </> "vanilla"  </> "api.js")
+instance ToParam (QueryParam "searchStr" [Char]) where
+  toParam _ = DocQueryParam "searchStr" ["Kurt", "Anders"] "Hejsearchstr" Normal -- List | Flag
 
--- md :: String
--- md = markdown (docs serverApi)
+instance ToCapture (Capture "id" Int) where
+  toCapture _ = DocCapture "1" "Record number"
 
--- instance toSample [Book] [Book] where
---   toSample _ = Just [Book { title = "hej", author = "jag", content = "innehåll", year = 2004 } ]
+-- instance ToSample Char where
+--   toSamples _ = "xxx"
 
 -- instance MimeRender PlainText ()
 
--- getBooks :: EitherT ServantErr IO [Book]
+-- ttt :: String
+-- ttt = "text"
+
+-- sss :: String
+-- sss = "streng"
+
+----------------------------------------------------------------------------
+-- No instance for servant-foreign-0.7.1:Servant.Foreign.Internal.NotFound -
+-- js :: IO ()
+-- js = writeJSForAPI bookapi vanillaJS (static </> "vanilla"  </> "api.js")
+-- rubyClient :: Text
+-- rubyClient = Lackey.rubyForAPI bookapi
+----------------------------------------------------------------------------
+
+-- getBooks :: Handler [Book]
 -- getBooks = client api host where
 --   Right host = parseBaseUrl "http://localhost:3000/books"
 
----------------------------------------
 
--- authHEAD :: ByteString
--- authHEAD = "Authorization"
+-- mockServer :: IO ()
+--   mockServer = run 3000 $ serve mainapi $ mock bookapi
 
-myCors :: Middleware
-myCors = cors $ const (Just myResourcePolicy)
+apiDocs :: String
+apiDocs = markdown $ docs bookapi
 
-myResourcePolicy :: CorsResourcePolicy
-myResourcePolicy =
-    CorsResourcePolicy
-        { corsOrigins = Just (["http://127.0.0.1:8000", "http://localhost:8000", "http://127.0.0.1:8001", "chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop"], True)
-        , corsMethods = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTION"]
-        , corsRequestHeaders = simpleHeaders ++ [hAuthorization]
-        , corsExposedHeaders = Nothing
-        , corsMaxAge = Nothing
-        , corsVaryOrigin = False
-        , corsRequireOrigin = False
-        , corsIgnoreFailures = False
-        }
+writeDocs :: IO ()
+writeDocs = writeFile "mydocs.md" apiDocs
 
 mainFunc :: IO ()
 mainFunc = do
@@ -152,6 +179,6 @@ mainFunc = do
         Nothing -> putStrLn $ "Can't parse \"" ++ configFileName ++ "\" file, terminating!"
         Just conf -> do
             pool <- runStdoutLoggingT $ createMySQLPool (connectInfo conf) (fromIntegral $ poolSize conf)
-            run (fromIntegral $ appPort conf) $ myCors $ serve api' (server' pool (dbSalt conf))
+            run (fromIntegral $ appPort conf) $ myCors $ serve mainapi (server pool (dbSalt conf))
             -- run (fromIntegral $ appPort conf) $ myCors $ serve api (server pool (dbSalt conf))
             -- run (fromIntegral $ appPort conf) $ (addHeaders [(authHEAD, authHEAD)]) $ myCors $ serve api' (server' pool (dbSalt conf))
