@@ -12,7 +12,7 @@ static = "static"
 -- authHEAD = "Authorization"
 
 newtype HelloMessage = HelloMessage { msg :: String }
-  deriving Generic
+  deriving (Generic, Show)
 
 instance ToJSON HelloMessage
 instance FromJSON HelloMessage

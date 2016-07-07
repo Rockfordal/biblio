@@ -13,13 +13,14 @@ module Lib (mainFunc) where
 
 import Network.Wai.Handler.Warp
 import qualified Data.Configurator as C
+-- import Control.Lens
+-- import Data.Aeson.Types (camelTo2)
+import Data.Aeson (encode)
 import Data.Text
 import Data.Text.Internal
 import Data.Word
-
--- import Data.Aeson
--- import Data.Aeson.TH
--- import GHC.Generics
+import Data.Swagger hiding (Header, Http)
+import qualified Data.ByteString.Lazy.Char8 as BL8
 
 import System.FilePath
 import qualified Lackey
@@ -31,7 +32,7 @@ import Test.QuickCheck.Arbitrary
 
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Servant.Client
--- import Servant.Swagger
+import Servant.Swagger
 -- import Servant.Swagger.UI
 -- import Servant.API.ContentTypes
 
@@ -45,8 +46,7 @@ import Db.Common
 
 import Control.Monad.IO.Class
 import Control.Monad.Error.Class (throwError)
-import Control.Monad.Trans.Except (ExceptT)
-
+import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Logic.Books
 import Logic.Users
 import Json.Book
@@ -59,26 +59,25 @@ configFileName = "application.conf"
 
 
 connectInfo :: AppConfig -> ConnectInfo
-connectInfo conf = defaultConnectInfo { connectUser = dbUser conf
+connectInfo conf = defaultConnectInfo { connectUser     = dbUser conf
                                       , connectPassword = dbPassword conf
                                       , connectDatabase = dbName conf
-                                      , connectHost = dbHost conf
-                                      , connectPort = dbPort conf
+                                      , connectHost     = dbHost conf
+                                      , connectPort     = dbPort conf
                                       }
 
--- helloUser :: ConnectionPool -> String -> Maybe Text -> Handler HelloMessage
 helloUser :: ConnectionPool -> String -> Maybe Text -> Handler String
 helloUser pool salt Nothing = throwError $ err403 { errBody = "No Authorization header found!" }
 helloUser pool salt (Just authHeader) =
     withUser pool authHeader salt $ \user -> do
         return $ show user
         -- liftIO $ print user
-        -- return $ pack $ show user
 
 hello :: Maybe String -> Handler HelloMessage
 hello mname = return . HelloMessage $ case mname of
   Nothing -> "Hello, anonymous coward"
   Just n  -> "Hello from Biblio Servant, " ++ n
+
 
 type HelloAPI = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
 
@@ -131,7 +130,6 @@ server pool salt = userServer pool salt
               :<|> bookServer pool salt
               :<|> serveDirectory "static"
 
-
 --- Böcker ---
 instance ToParam (QueryParam "limit" Word16) where
   toParam _ = DocQueryParam "limit" ["10", "20"] "Hejlimit" Normal -- List | Flag
@@ -151,7 +149,7 @@ instance ToCapture (Capture "id" Int) where
 instance ToSample Char where
   toSamples _ = [("apa", 'c')]
 
---- Mock Server ---
+--- Mockserver ---
 instance Arbitrary HelloMessage where
   arbitrary = HelloMessage <$> arbitrary
 
@@ -161,6 +159,9 @@ instance Arbitrary User where
 instance Arbitrary Book where
   arbitrary = Book <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
+--- Swagger ---
+instance ToSchema HelloMessage where
+
 
 js :: IO ()
 js = writeJSForAPI bookapi vanillaJS (static </> "vanilla"  </> "api.js")
@@ -168,38 +169,30 @@ js = writeJSForAPI bookapi vanillaJS (static </> "vanilla"  </> "api.js")
 rubyClient :: Text
 rubyClient = Lackey.rubyForAPI bookapi
 
--- sayHello :
--- sayHello = client mainapi host where
-  -- host = BaseUrl Http "localhost" 3000
--- Right host = parseBaseUrl "http://localhost:3000/hello"
-
--- getAllBooks :: ExceptT String IO [Book]
--- postNewBook :: Book -> ExceptT String IO Book
--- 'client' allows you to produce operations to query an API from a client.
--- (getAllBooks :<|> ostNewBook) = client mainapi host
-
--- :<|> "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
-
-helloclient :: Maybe String -- ^ an optional value for "name"
-      -> Manager -- ^ the HTTP client to use
-      -> BaseUrl -- ^ the URL at which the API can be found
-      -> ExceptT ServantError IO HelloMessage
-
+helloclient :: Client HelloAPI
 helloclient = client helloapi
 
--- sayhello = helloclient (Just "servant") manager baseurl where
---   baseurl = (BaseUrl Http "localhost" 3000 "")
-  -- baseurl = BaseUrl Http "localhost" 3000
-  -- baseurl = Right host = parseBaseUrl "http://localhost:3000/hello"
+queries :: Manager -> BaseUrl -> ExceptT ServantError IO HelloMessage
+queries manager baseurl = do
+  message <- helloclient (Just "servant") manager baseurl
+  return message
 
--- getAllBooks = client mainapi host
---   where host = BaseUrl Http "localhost" 8000
+haskell :: IO ()
+haskell = do
+  let baseUrl = (BaseUrl Http "localhost" 3000 "")
+  manager <- newManager defaultManagerSettings
+  res <- runExceptT $ queries manager baseUrl
+  case res of
+    Left err -> putStrLn $ "Error: " ++ show err
+    Right message -> do
+      print message
 
--- baseurl = (BaseUrl Http "localhost" 3000 "")
+helloswagger :: Swagger
+helloswagger = toSwagger helloapi
 
--- runn = do
---   manager <- newManager defaultManagerSettings
---   helloclient (Just "servant") manager baseurl
+genHello :: IO ()
+genHello = BL8.putStr $ encode helloswagger
+-- {"swagger":"2.0","info":{"version":"","title":""},"paths":{"/hello":{"get":{"produces":["application/json"],"parameters":[{"in":"query","name":"name","type":"string"}],"responses":{"400":{"description":"Invalid `name`"},"200":{"schema":{"$ref":"#/definitions/HelloMessage"},"description":""}}}}},"definitions":{"HelloMessage":{"required":["msg"],"properties":{"msg":{"type":"string"}},"type":"object"}}}
 
 mockServer :: IO ()
 mockServer = run 3000 $ serve mainapi $ mock mainapi Proxy
