@@ -2,20 +2,19 @@
 module Typer where
 
 import Data.Aeson
--- import Data.Aeson.TH
 import GHC.Generics
-
-static :: FilePath
-static = "static"
-
--- authHEAD :: ByteString
--- authHEAD = "Authorization"
 
 newtype HelloMessage = HelloMessage { msg :: String }
   deriving (Generic, Show)
 
 instance ToJSON HelloMessage
 instance FromJSON HelloMessage
+
+static :: FilePath
+static = "static"
+
+-- authHEAD :: ByteString
+-- authHEAD = "Authorization"
 
 -- newtype Hej = Hej String
 --   deriving Generic
@@ -25,11 +24,11 @@ instance FromJSON HelloMessage
 
 -- instance ToJSON Hej
 
-ccc :: Char
-ccc = 'c'
+-- ccc :: Char
+-- ccc = 'c'
 
-ttt :: String
-ttt = "text"
+-- ttt :: String
+-- ttt = "text"
 
-sss :: String
-sss = "streng"
+-- sss :: String
+-- sss = "streng"
