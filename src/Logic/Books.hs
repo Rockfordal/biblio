@@ -56,21 +56,21 @@ updateBook pool salt (Just authHeader) book =
                         return "ja"
                     else return "nej"
 
--- nej :: Text
+-- nej :: String
 -- nej = "nej"
 
-ja :: String
-ja = "ja"
+-- ja :: String
+-- ja = "ja"
 
 deleteBook :: ConnectionPool -> String -> Maybe Text -> Int -> Handler String
-deleteBook _ _ Nothing _ = return ja -- nej
+deleteBook _ _ Nothing _ = return "nej"
 deleteBook pool salt (Just authHeader) _id =
     withUser pool authHeader salt $ \user -> do
         belongs <- bookBelongsToUser pool user _id
         if belongs
             then do
                 query pool $ delete (toKey _id :: Key DbBook.Book)
-                return ja
+                return "ja"
             else throwError $ err400 { errBody = "deleteBook error"}
 
 

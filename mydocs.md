@@ -65,6 +65,61 @@ Clients must supply the following data
 [{"content":"innehåll","year":2004,"author":"jag","id":1,"title":"hej","user_id":null},{"content":"innehåll","year":2004,"author":"jag","id":1,"title":"hej","user_id":null},{"content":"innehåll","year":2004,"author":"jag","id":1,"title":"hej","user_id":null},{"content":"innehåll","year":2004,"author":"jag","id":1,"title":"hej","user_id":null}]
 ```
 
+## DELETE /book/:id
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *1*: Record number
+
+
+- This endpoint is sensitive to the value of the **Authorization** HTTP header.
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `text/plain;charset=utf-8`
+
+- 
+
+```
+
+```
+
+- apa
+
+```
+c
+```
+
+- apa, apa
+
+```
+cc
+```
+
+- apa, apa, apa
+
+```
+ccc
+```
+
+- apa, apa, apa, apa
+
+```
+cccc
+```
+
 ## GET /book/:id
 
 #### Authentication

@@ -5,8 +5,10 @@ grant all on biblio.* to `biblio`@`localhost` identified by 'biblio';
 Flush privileges;
 
 use biblio;
-create table `user` (id int auto_increment primary key, login varchar(128) unique not null, password varchar(128) not null);
-
+create table `user` (id int auto_increment primary key,
+                     login varchar(128) unique not null,
+                     password varchar(128) not null,
+                     role char(15));
 
 insert into `user`(`login`, `password`) values('user', md5('my-salt-123password'));
 

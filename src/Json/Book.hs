@@ -5,6 +5,7 @@ module Json.Book where
 
 import GHC.Generics (Generic)
 import qualified Data.Aeson as A
+import Servant.Docs -- (markdown, docs)
 
 data Book = Book {
     id       :: Maybe Int
@@ -18,3 +19,7 @@ data Book = Book {
 
 instance A.ToJSON Book
 instance A.FromJSON Book
+
+
+instance ToSample Book where
+  toSamples _ = singleSample Book { Json.Book.id = Just 1, title = "hej", author = "jag", content = "innehåll", year = 2004, user_id = Nothing }

@@ -9,6 +9,8 @@ packages:
     git: https://github.com/mchaver/mysql
     commit: 87c8048fe5149ecaf3825b1e05f41ecf25ba051e
 extra-deps:
+- tf-random-0.5
+- QuickCheck-2.8.2
 - control-monad-omega-0.3.1
 - HTTP-4000.3.3
 - HUnit-1.3.1.1
@@ -123,6 +125,8 @@ extra-deps:
 - servant-js-0.7.1
 - servant-server-0.7.1
 - servant-docs-0.7.1
+- servant-mock-0.7.1
+- servant-client-0.7.1
 - lackey-0.3.2
 - silently-1.2.5
 - simple-sendfile-0.2.25

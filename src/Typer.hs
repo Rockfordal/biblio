@@ -15,6 +15,7 @@ newtype HelloMessage = HelloMessage { msg :: String }
   deriving Generic
 
 instance ToJSON HelloMessage
+instance FromJSON HelloMessage
 
 
 -- newtype Hej = Hej String
@@ -25,4 +26,11 @@ instance ToJSON HelloMessage
 
 -- instance ToJSON Hej
 
+ccc :: Char
+ccc = 'c'
 
+ttt :: String
+ttt = "text"
+
+sss :: String
+sss = "streng"
