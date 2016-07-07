@@ -17,11 +17,11 @@ module Lib (mainFunc) where
 
 import Network.Wai.Handler.Warp
 import qualified Data.Configurator as C
-import Control.Lens       hiding ((.=))
--- import Data.Aeson.Types (camelTo2)
+import Control.Lens hiding ((.=))
 import Data.Aeson (encode)
 import Data.Text
 import Data.Text.Internal
+import qualified Data.Text.IO as TextIO
 import Data.Word
 import Data.Swagger hiding (Header, Http)
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -96,12 +96,11 @@ type BookAPI = "book"  :> Capture "id" Int :> Get '[JSON] (Maybe Book)
           :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put    '[JSON] String
           :<|> "book"  :> Header "Authorization" Text :> Capture "id"    Int  :> Delete '[JSON] String
 
--- type BasicAPI = HelloAPI
---            :<|> UserAPI
---            :<|> BookAPI
+type BasicAPI = HelloAPI
+           :<|> UserAPI
+           :<|> BookAPI
 
 data API
--- type API' = BasicAPI
 type API' = HelloAPI
        :<|> UserAPI
        :<|> BookAPI
@@ -183,17 +182,24 @@ instance Arbitrary Swagger
 
 instance Arbitrary (SwaggerUiHtml SwaggerSchemaEndpoint API)
 
+instance HasMock API context0
+
 --- Swagger ---
 type instance IsElem' e API = IsElem e API'
 
 instance ToSchema Book
 instance ToSchema HelloMessage
+instance ToSchema User
+
 
 js :: IO ()
 js = writeJSForAPI bookapi vanillaJS (static </> "vanilla"  </> "api.js")
 
 rubyClient :: Text
 rubyClient = Lackey.rubyForAPI bookapi
+
+writeRubyClient :: IO ()
+writeRubyClient = TextIO.writeFile "rubyClient.rb" rubyClient
 
 helloclient :: Client HelloAPI
 helloclient = client helloapi
@@ -214,7 +220,7 @@ haskell = do
       print message
 
 swaggerDoc :: Swagger
-swaggerDoc = toSwagger (Proxy :: Proxy BookAPI)
+swaggerDoc = toSwagger (Proxy :: Proxy BasicAPI)
     & info.title       .~ "Items API"
     & info.version     .~ "2016.7.7"
     & info.description ?~ "Hemlig API för hemlig projektutveckling"
@@ -222,8 +228,8 @@ swaggerDoc = toSwagger (Proxy :: Proxy BookAPI)
 genHello :: IO ()
 genHello = BL8.putStr $ encode swaggerDoc
 
--- mockServer :: IO ()
--- mockServer = run 3000 $ serve mainapi $ mock mainapi Proxy
+mockServer :: IO ()
+mockServer = run 3000 $ serve api $ mock api Proxy
 
 apiDocs :: String
 apiDocs = markdown $ docs bookapi
