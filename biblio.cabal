@@ -63,6 +63,7 @@ library
                      , servant-mock
                      , servant-client
                      , servant-swagger
+                     , servant-swagger-ui
                      , http-client
                      , lackey
                      , mtl
@@ -70,6 +71,7 @@ library
                      , filepath
                      , QuickCheck
                      , swagger2
+                     , lens
   
   default-language:    Haskell2010
 

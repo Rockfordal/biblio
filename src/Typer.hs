@@ -17,7 +17,6 @@ newtype HelloMessage = HelloMessage { msg :: String }
 instance ToJSON HelloMessage
 instance FromJSON HelloMessage
 
-
 -- newtype Hej = Hej String
 --   deriving Generic
 

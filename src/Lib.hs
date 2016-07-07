@@ -3,17 +3,21 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
--- {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE UndecidableInstances       #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Lib (mainFunc) where
 
 import Network.Wai.Handler.Warp
 import qualified Data.Configurator as C
--- import Control.Lens
+import Control.Lens       hiding ((.=))
 -- import Data.Aeson.Types (camelTo2)
 import Data.Aeson (encode)
 import Data.Text
@@ -25,7 +29,7 @@ import qualified Data.ByteString.Lazy.Char8 as BL8
 import System.FilePath
 import qualified Lackey
 import Servant
-import Servant.Docs -- (markdown, docs)
+import Servant.Docs hiding (API) -- (markdown, docs)
 import Servant.JS (writeJSForAPI, vanillaJS)
 import Servant.Mock -- (mock)
 import Test.QuickCheck.Arbitrary
@@ -33,8 +37,7 @@ import Test.QuickCheck.Arbitrary
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Servant.Client
 import Servant.Swagger
--- import Servant.Swagger.UI
--- import Servant.API.ContentTypes
+import Servant.Swagger.UI
 
 import Database.Persist.MySQL
 import Control.Monad.Logger
@@ -49,7 +52,7 @@ import Control.Monad.Error.Class (throwError)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Logic.Books
 import Logic.Users
-import Json.Book
+import Json.Book hiding (title)
 import Json.User
 import Ware
 import Typer
@@ -78,11 +81,12 @@ hello mname = return . HelloMessage $ case mname of
   Nothing -> "Hello, anonymous coward"
   Just n  -> "Hello from Biblio Servant, " ++ n
 
-
-type HelloAPI = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
+type SwaggerSchemaEndpoint = "swagger.js" :> Get '[JSON] Swagger
 
 type UserAPI = "users" :> Header "Authorization" Text :> Get '[JSON] [User]
                :<|> "helloUser" :> Header "Authorization" Text :> Get '[PlainText] String
+
+type HelloAPI = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
 
 type BookAPI = "book"  :> Capture "id" Int :> Get '[JSON] (Maybe Book)
           :<|> "book"  :> QueryParam "searchField" String :> QueryParam "searchStr" String
@@ -91,6 +95,25 @@ type BookAPI = "book"  :> Capture "id" Int :> Get '[JSON] (Maybe Book)
           :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post   '[JSON] String
           :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put    '[JSON] String
           :<|> "book"  :> Header "Authorization" Text :> Capture "id"    Int  :> Delete '[JSON] String
+
+-- type BasicAPI = HelloAPI
+--            :<|> UserAPI
+--            :<|> BookAPI
+
+data API
+-- type API' = BasicAPI
+type API' = HelloAPI
+       :<|> UserAPI
+       :<|> BookAPI
+       :<|> SwaggerSchemaEndpoint
+       :<|> SwaggerUI "ui" SwaggerSchemaEndpoint API
+       :<|> Raw
+
+instance HasServer API
+  context where
+  type ServerT API m = ServerT API' m
+  route _ = route (Proxy :: Proxy API')
+
 
 helloapi :: Proxy HelloAPI
 helloapi = Proxy
@@ -101,13 +124,8 @@ userapi = Proxy
 bookapi :: Proxy BookAPI
 bookapi = Proxy
 
-type MainAPI =  UserAPI
-           :<|> HelloAPI
-           :<|> BookAPI
-           :<|> Raw
-
-mainapi :: Proxy MainAPI
-mainapi = Proxy
+api :: Proxy API
+api = Proxy
 
 helloServer :: ConnectionPool -> String -> Server HelloAPI
 helloServer pool salt = hello
@@ -124,10 +142,12 @@ bookServer pool salt = showBook pool
               :<|> updateBook pool salt
               :<|> deleteBook pool salt
 
-server :: ConnectionPool -> String -> Server MainAPI
-server pool salt = userServer pool salt
-              :<|> helloServer pool salt
+server :: ConnectionPool -> String -> Server API
+server pool salt = helloServer pool salt
+              :<|> userServer pool salt
               :<|> bookServer pool salt
+              :<|> return swaggerDoc
+              :<|> swaggerUIServer
               :<|> serveDirectory "static"
 
 --- Böcker ---
@@ -159,9 +179,15 @@ instance Arbitrary User where
 instance Arbitrary Book where
   arbitrary = Book <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
---- Swagger ---
-instance ToSchema HelloMessage where
+instance Arbitrary Swagger
 
+instance Arbitrary (SwaggerUiHtml SwaggerSchemaEndpoint API)
+
+--- Swagger ---
+type instance IsElem' e API = IsElem e API'
+
+instance ToSchema Book
+instance ToSchema HelloMessage
 
 js :: IO ()
 js = writeJSForAPI bookapi vanillaJS (static </> "vanilla"  </> "api.js")
@@ -187,15 +213,17 @@ haskell = do
     Right message -> do
       print message
 
-helloswagger :: Swagger
-helloswagger = toSwagger helloapi
+swaggerDoc :: Swagger
+swaggerDoc = toSwagger (Proxy :: Proxy BookAPI)
+    & info.title       .~ "Items API"
+    & info.version     .~ "2016.7.7"
+    & info.description ?~ "Hemlig API för hemlig projektutveckling"
 
 genHello :: IO ()
-genHello = BL8.putStr $ encode helloswagger
--- {"swagger":"2.0","info":{"version":"","title":""},"paths":{"/hello":{"get":{"produces":["application/json"],"parameters":[{"in":"query","name":"name","type":"string"}],"responses":{"400":{"description":"Invalid `name`"},"200":{"schema":{"$ref":"#/definitions/HelloMessage"},"description":""}}}}},"definitions":{"HelloMessage":{"required":["msg"],"properties":{"msg":{"type":"string"}},"type":"object"}}}
+genHello = BL8.putStr $ encode swaggerDoc
 
-mockServer :: IO ()
-mockServer = run 3000 $ serve mainapi $ mock mainapi Proxy
+-- mockServer :: IO ()
+-- mockServer = run 3000 $ serve mainapi $ mock mainapi Proxy
 
 apiDocs :: String
 apiDocs = markdown $ docs bookapi
@@ -212,5 +240,5 @@ mainFunc = do
         Nothing -> putStrLn $ "Can't parse \"" ++ configFileName ++ "\" file, terminating!"
         Just conf -> do
             pool <- runStdoutLoggingT $ createMySQLPool (connectInfo conf) (fromIntegral $ poolSize conf)
-            run (fromIntegral $ appPort conf) $ myCors $ serve mainapi (server pool (dbSalt conf))
+            run (fromIntegral $ appPort conf) $ myCors $ serve api (server pool (dbSalt conf))
             -- run (fromIntegral $ appPort conf) $ (addHeaders [(authHEAD, authHEAD)]) $ myCors $ serve api' (server' pool (dbSalt conf))
