@@ -20,6 +20,9 @@ create table book(id int auto_increment primary key,
                   year int,
                   user_id int);
 
+insert into book(`title`, `author`, `content`, `year`, `user_id`) values('Min Bok', 'Jag', 'Bokens innehåll.', 2016, 1);
+
+
 create table shelf(id int auto_increment primary key,
                   name varchar(128) unique not null,
                   size int
@@ -27,5 +30,4 @@ create table shelf(id int auto_increment primary key,
                   -- user_id int
                   -- room_id int
 
-insert into book(`title`, `author`, `content`, `year`, `user_id`) values('Min Bok', 'Jag', 'Bokens innehåll.', 2016, 1);
 insert into shelf(`name`, `size`) values('A01', 10);
