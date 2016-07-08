@@ -20,7 +20,20 @@ import Json.User (User(..))
 import qualified Json.User as JsonUser
 import qualified Db.User as DbUser
 import qualified Convert.UserConverter as C
+import Typer (HelloMessage(..))
 
+
+helloUser :: ConnectionPool -> String -> Maybe Text -> Handler String
+helloUser _pool _salt Nothing = throwError $ err403 { errBody = "No Authorization header found!" }
+helloUser pool salt (Just authHeader) =
+    withUser pool authHeader salt $ \user -> do
+        return $ show user
+        -- liftIO $ print user
+
+hello :: Maybe String -> Handler HelloMessage
+hello mname = return . HelloMessage $ case mname of
+  Nothing -> "Hello, anonymous coward"
+  Just n  -> "Hello from Biblio Servant, " ++ n
 
 createUser :: ConnectionPool -> String -> Maybe Text -> User -> Handler ()
 createUser _ _ Nothing _ = return ()

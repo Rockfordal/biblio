@@ -56,11 +56,6 @@ updateBook pool salt (Just authHeader) book =
                         return "ja"
                     else return "nej"
 
--- nej :: String
--- nej = "nej"
-
--- ja :: String
--- ja = "ja"
 
 deleteBook :: ConnectionPool -> String -> Maybe Text -> Int -> Handler String
 deleteBook _ _ Nothing _ = return "nej"
@@ -83,7 +78,7 @@ showBook pool bookid = do
           maybeBook (Just b) = C.toJson b
 
 selectBooks :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> Handler [Book]
-selectBooks _ Nothing _ _ _= return []
+selectBooks _ Nothing _ _ _ = return []
 selectBooks _ _ Nothing _ _ = return []
 selectBooks _ _ _ Nothing _ = return []
 selectBooks _ _ _ _ Nothing = return []

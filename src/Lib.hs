@@ -12,6 +12,8 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
+
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Lib (mainFunc) where
 
@@ -56,6 +58,7 @@ import Json.Book hiding (title)
 import Json.User
 import Ware
 import Typer
+import API
 
 configFileName :: String
 configFileName = "application.conf"
@@ -69,41 +72,11 @@ connectInfo conf = defaultConnectInfo { connectUser     = dbUser conf
                                       , connectPort     = dbPort conf
                                       }
 
-helloUser :: ConnectionPool -> String -> Maybe Text -> Handler String
-helloUser pool salt Nothing = throwError $ err403 { errBody = "No Authorization header found!" }
-helloUser pool salt (Just authHeader) =
-    withUser pool authHeader salt $ \user -> do
-        return $ show user
-        -- liftIO $ print user
-
-hello :: Maybe String -> Handler HelloMessage
-hello mname = return . HelloMessage $ case mname of
-  Nothing -> "Hello, anonymous coward"
-  Just n  -> "Hello from Biblio Servant, " ++ n
 
 type SwaggerSchemaEndpoint = "swagger.js" :> Get '[JSON] Swagger
 
-type UserAPI = "users" :> Header "Authorization" Text :> Get '[JSON] [User]
-               :<|> "helloUser" :> Header "Authorization" Text :> Get '[PlainText] String
-
-type HelloAPI = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
-
-type BookAPI = "book"  :> Capture "id" Int :> Get '[JSON] (Maybe Book)
-          :<|> "book"  :> QueryParam "searchField" String :> QueryParam "searchStr" String
-                       :> QueryParam "offset" Word16 :> QueryParam "limit" Word16 :> Get '[JSON] [Book]
-          :<|> "books" :> Get '[JSON] [Book]
-          :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Post   '[JSON] String
-          :<|> "book"  :> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put    '[JSON] String
-          :<|> "book"  :> Header "Authorization" Text :> Capture "id"    Int  :> Delete '[JSON] String
-
-type BasicAPI = HelloAPI
-           :<|> UserAPI
-           :<|> BookAPI
-
 data API
-type API' = HelloAPI
-       :<|> UserAPI
-       :<|> BookAPI
+type API' = BasicAPI
        :<|> SwaggerSchemaEndpoint
        :<|> SwaggerUI "ui" SwaggerSchemaEndpoint API
        :<|> Raw
@@ -114,9 +87,6 @@ instance HasServer API
   route _ = route (Proxy :: Proxy API')
 
 
-helloapi :: Proxy HelloAPI
-helloapi = Proxy
-
 userapi :: Proxy UserAPI
 userapi = Proxy
 
@@ -126,25 +96,27 @@ bookapi = Proxy
 api :: Proxy API
 api = Proxy
 
-helloServer :: ConnectionPool -> String -> Server HelloAPI
-helloServer pool salt = hello
 
 userServer :: ConnectionPool -> String -> Server UserAPI
-userServer pool salt = selectUsersAuth pool salt
-              :<|> helloUser pool salt
+userServer pool salt =
+                  hello
+                  :<|> helloUser pool salt
+                  :<|> selectUsersAuth pool salt
 
 bookServer :: ConnectionPool -> String -> Server BookAPI
 bookServer pool salt = showBook pool
-              :<|> selectBooks pool
-              :<|> selectBooks pool (Just "title") (Just "") (Just 0) (Just 10)
-              :<|> createBook pool salt
-              :<|> updateBook pool salt
-              :<|> deleteBook pool salt
+                  :<|> selectBooks pool
+                  :<|> selectBooks pool (Just "title") (Just "") (Just 0) (Just 10)
+                  :<|> createBook pool salt
+                  :<|> updateBook pool salt
+                  :<|> deleteBook pool salt
+
+basicServer :: ConnectionPool -> String -> Server BasicAPI
+basicServer pool salt = userServer pool salt
+                   :<|> bookServer pool salt
 
 server :: ConnectionPool -> String -> Server API
-server pool salt = helloServer pool salt
-              :<|> userServer pool salt
-              :<|> bookServer pool salt
+server pool salt = basicServer pool salt
               :<|> return swaggerDoc
               :<|> swaggerUIServer
               :<|> serveDirectory "static"
@@ -201,23 +173,30 @@ rubyClient = Lackey.rubyForAPI bookapi
 writeRubyClient :: IO ()
 writeRubyClient = TextIO.writeFile "rubyClient.rb" rubyClient
 
-helloclient :: Client HelloAPI
-helloclient = client helloapi
+qhello :: Maybe String -> Manager -> BaseUrl -> ClientM HelloMessage
+qhellouser :: Maybe Text -> Manager -> BaseUrl -> ClientM String
+qgetusers :: Maybe Text -> Manager -> BaseUrl -> ClientM [User]
+qhello :<|> qhellouser :<|> qgetusers = client userapi
 
-queries :: Manager -> BaseUrl -> ExceptT ServantError IO HelloMessage
+queries :: Manager -> BaseUrl -> ExceptT ServantError IO (HelloMessage, String, [User])
 queries manager baseurl = do
-  message <- helloclient (Just "servant") manager baseurl
-  return message
+  let auth = Just "Basic dXNlcjpwYXNzd29yZA=="
+  msg    <- qhello     (Just "tjena") manager baseurl
+  secret <- qhellouser auth manager baseurl
+  users  <- qgetusers  auth manager baseurl
+  return (msg, secret, users)
 
 haskell :: IO ()
 haskell = do
-  let baseUrl = (BaseUrl Http "localhost" 3000 "")
+  let baseUrl = (BaseUrl Http "localhost" 3000 "/users") -- /users/hello
   manager <- newManager defaultManagerSettings
   res <- runExceptT $ queries manager baseUrl
   case res of
     Left err -> putStrLn $ "Error: " ++ show err
-    Right message -> do
-      print message
+    Right (msg, secret, users) -> do
+      print msg
+      print secret
+      print users
 
 swaggerDoc :: Swagger
 swaggerDoc = toSwagger (Proxy :: Proxy BasicAPI)

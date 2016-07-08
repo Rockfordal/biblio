@@ -30,7 +30,7 @@ library
                      , Convert.BookConverter
                      , Ware
                      , Typer
-                     
+                     , API
                      
   build-depends:       base >= 4.7 && < 5
                      , Cabal
