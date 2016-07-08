@@ -4,8 +4,9 @@ module Server where
 import Database.Persist.MySQL
 import Servant
 
-import Logic.Books
 import Logic.Users
+import Logic.Books
+import Logic.Shelfs
 import API
 
 
@@ -23,6 +24,15 @@ bookServer pool salt = showBook pool
                   :<|> updateBook pool salt
                   :<|> deleteBook pool salt
 
+shelfServer :: ConnectionPool -> String -> Server ShelfAPI
+shelfServer pool salt = showShelf pool
+                  :<|> selectShelfs pool
+                  :<|> selectShelfs pool (Just "title") (Just "") (Just 0) (Just 10)
+                  :<|> createShelf pool salt
+                  :<|> updateShelf pool salt
+                  :<|> deleteShelf pool salt
+
 basicServer :: ConnectionPool -> String -> Server BasicAPI
 basicServer pool salt = userServer pool salt
                   :<|> bookServer pool salt
+                  :<|> shelfServer pool salt

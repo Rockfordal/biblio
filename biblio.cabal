@@ -20,14 +20,18 @@ library
                      , Auth.DbAuth
                      , AppConfig
                      , Db.Common                     
-                     , Json.User
                      , Db.User
+                     , Db.Book
+                     , Db.Shelf
                      , Convert.UserConverter
+                     , Convert.BookConverter
+                     , Convert.ShelfConverter
                      , Logic.Books
                      , Logic.Users
+                     , Logic.Shelfs
+                     , Json.User
                      , Json.Book
-                     , Db.Book
-                     , Convert.BookConverter
+                     , Json.Shelf
                      , Ware
                      , Typer
                      , API

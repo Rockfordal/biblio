@@ -40,8 +40,9 @@ import Servant.Client
 import Servant
 import System.FilePath
 
-import Json.Book hiding (title)
 import Json.User
+import Json.Book  hiding (title)
+import Json.Shelf
 import Typer -- (static)
 import API
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -118,9 +119,10 @@ type instance IsElem' e API = IsElem e API'
 instance Arbitrary Swagger
 instance Arbitrary (SwaggerUiHtml SwaggerSchemaEndpoint API)
 
-instance ToSchema Book
 instance ToSchema HelloMessage
 instance ToSchema User
+instance ToSchema Book
+instance ToSchema Shelf
 
 --- Böcker ---
 instance ToParam (QueryParam "limit" Word16) where
