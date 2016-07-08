@@ -41,8 +41,9 @@ import Servant
 import System.FilePath
 
 import Json.User
-import Json.Book  hiding (title)
 import Json.Shelf
+import Json.Item hiding (info)
+-- import Json.Book  hiding (title)
 import Typer -- (static)
 import API
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -50,16 +51,19 @@ import Data.Aeson (encode)
 
 
 js :: IO ()
-js = writeJSForAPI bookapi vanillaJS (static </> "vanilla" </> "api.js")
+-- js = writeJSForAPI bookapi vanillaJS (static </> "vanilla" </> "api.js")
+js = writeJSForAPI shelfapi vanillaJS (static </> "vanilla" </> "api.js")
 
 rubyClient :: Text
-rubyClient = Lackey.rubyForAPI bookapi
+-- rubyClient = Lackey.rubyForAPI bookapi
+rubyClient = Lackey.rubyForAPI shelfapi
 
 writeRubyClient :: IO ()
 writeRubyClient = TextIO.writeFile "rubyClient.rb" rubyClient
 
 apiDocs :: String
-apiDocs = markdown $ docs bookapi
+-- apiDocs = markdown $ docs bookapi
+apiDocs = markdown $ docs shelfapi
 
 writeDocs :: IO ()
 writeDocs = writeFile "mydocs.md" apiDocs
@@ -121,8 +125,10 @@ instance Arbitrary (SwaggerUiHtml SwaggerSchemaEndpoint API)
 
 instance ToSchema HelloMessage
 instance ToSchema User
-instance ToSchema Book
 instance ToSchema Shelf
+instance ToSchema Item
+-- instance ToSchema Book
+
 
 --- Böcker ---
 instance ToParam (QueryParam "limit" Word16) where
@@ -150,8 +156,14 @@ instance Arbitrary HelloMessage where
 instance Arbitrary User where
   arbitrary = User <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
-instance Arbitrary Book where
-  arbitrary = Book <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+-- instance Arbitrary Shelf where
+--   arbitrary = Shelf <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+-- instance Arbitrary Item where
+--   arbitrary = Item <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+-- instance Arbitrary Book where
+--   arbitrary = Book <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 instance HasServer API
   context where

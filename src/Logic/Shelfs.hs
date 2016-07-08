@@ -10,7 +10,7 @@ import Database.Persist.MySQL
 import Servant
 -- import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Error.Class (throwError)
-import Control.Monad.IO.Class
+-- import Control.Monad.IO.Class
 import Data.Text hiding (replace, length, any, concat, map, filter)
 import Data.Char
 import Data.Maybe
@@ -21,8 +21,8 @@ import Db.Common
 import Json.Shelf (Shelf(..))
 import qualified Json.Shelf as JsonShelf
 import qualified Db.Shelf as DbShelf
-import Json.User (User(User)) -- (User(..))
-import qualified Json.User as JsonUser
+-- import Json.User (User(User)) -- (User(..))
+-- import qualified Json.User as JsonUser
 import qualified Convert.ShelfConverter as C
 -- import Typer
 
@@ -30,7 +30,7 @@ import qualified Convert.ShelfConverter as C
 createShelf :: ConnectionPool -> String -> Maybe Text -> Shelf -> Handler [Char]
 createShelf _ _ Nothing _ = return "nej"
 createShelf pool salt (Just authHeader) shelf =
-    withUser pool authHeader salt $ \user -> do
+    withUser pool authHeader salt $ \_user -> do
         -- query pool $ insert (C.toRecord shelf {user_id = JsonUser.id user} :: DbShelf.Shelf)
         -- _ <- ($) query pool $ insert (C.toRecord shelf {user_id = JsonUser.id user} :: DbShelf.Shelf)
         _ <- ($) query pool $ insert (C.toRecord shelf :: DbShelf.Shelf)

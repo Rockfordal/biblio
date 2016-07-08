@@ -21,17 +21,21 @@ library
                      , AppConfig
                      , Db.Common                     
                      , Db.User
-                     , Db.Book
                      , Db.Shelf
+                     , Db.Item
+                     , Db.Book
                      , Convert.UserConverter
-                     , Convert.BookConverter
                      , Convert.ShelfConverter
-                     , Logic.Books
+                     , Convert.ItemConverter
+                     , Convert.BookConverter
                      , Logic.Users
                      , Logic.Shelfs
+                     , Logic.Items
+                     , Logic.Books
                      , Json.User
-                     , Json.Book
                      , Json.Shelf
+                     , Json.Item
+                     , Json.Book
                      , Ware
                      , Typer
                      , API

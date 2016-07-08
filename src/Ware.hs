@@ -16,13 +16,16 @@ ajax = pack "http://127.0.0.1:8001"
 elm :: Origin
 elm = pack "http://fire.solidcrm.se:8000"
 
+fire :: Origin
+fire = pack "http://fire.solidcrm.se:3000"
+
 postman :: Origin
 postman = pack "chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop"
 
 myResourcePolicy :: CorsResourcePolicy
 myResourcePolicy =
     CorsResourcePolicy
-        { corsOrigins = Just ([pux, ajax, elm, postman], True)
+        { corsOrigins = Just ([fire, pux, ajax, elm, postman], True)
         , corsMethods = [methodGet, methodPost, methodPut, methodDelete, methodHead, methodOptions]
         , corsRequestHeaders = simpleHeaders ++ [hAuthorization]
         , corsExposedHeaders = Nothing
