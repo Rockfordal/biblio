@@ -32,6 +32,7 @@ library
                      , Typer
                      , API
                      , Server
+                     , Docs
                      
   build-depends:       base >= 4.7 && < 5
                      , Cabal

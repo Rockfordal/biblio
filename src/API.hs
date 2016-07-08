@@ -9,7 +9,7 @@ import Json.User
 import Json.Book
 import Data.Text
 import Data.Word
-
+import Data.Proxy
 
 data API
 
@@ -25,7 +25,17 @@ type BookAPI = Capture "id" Int :> Get '[JSON] (Maybe Book)
           :<|> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put    '[JSON] String
           :<|> Header "Authorization" Text :> Capture "id"    Int  :> Delete '[JSON] String
 
+
 type UsersAPI = "users" :> UserAPI
 type BooksAPI = "books" :> BookAPI
 
 type BasicAPI = UsersAPI :<|> BooksAPI
+
+userapi :: Proxy UserAPI
+userapi = Proxy
+
+bookapi :: Proxy BookAPI
+bookapi = Proxy
+
+api :: Proxy API
+api = Proxy
