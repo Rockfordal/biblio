@@ -38,3 +38,6 @@ makeDbConfig conf = do
                      <*> dport
                      <*> port
                      <*> psize
+
+configFileName :: String
+configFileName = "application.conf"

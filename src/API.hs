@@ -10,6 +10,9 @@ import Json.Book
 import Data.Text
 import Data.Word
 
+
+data API
+
 type UserAPI = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
                :<|> "hellouser" :> Header "Authorization" Text :> Get '[PlainText] String
                :<|> Header "Authorization" Text :> Get '[JSON] [User]

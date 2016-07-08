@@ -14,7 +14,6 @@
 {-# LANGUAGE UndecidableInstances       #-}
 
 {-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Lib (mainFunc) where
 
 import Network.Wai.Handler.Warp
@@ -22,7 +21,6 @@ import qualified Data.Configurator as C
 import Control.Lens hiding ((.=))
 import Data.Aeson (encode)
 import Data.Text
-import Data.Text.Internal
 import qualified Data.Text.IO as TextIO
 import Data.Word
 import Data.Swagger hiding (Header, Http)
@@ -44,24 +42,14 @@ import Servant.Swagger.UI
 import Database.Persist.MySQL
 import Control.Monad.Logger
 
-import Auth.AuthHeader
-import Auth.DbAuth
 import AppConfig
-import Db.Common
-
-import Control.Monad.IO.Class
-import Control.Monad.Error.Class (throwError)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
-import Logic.Books
-import Logic.Users
 import Json.Book hiding (title)
 import Json.User
 import Ware
 import Typer
 import API
-
-configFileName :: String
-configFileName = "application.conf"
+import Server
 
 
 connectInfo :: AppConfig -> ConnectInfo
@@ -75,7 +63,6 @@ connectInfo conf = defaultConnectInfo { connectUser     = dbUser conf
 
 type SwaggerSchemaEndpoint = "swagger.js" :> Get '[JSON] Swagger
 
-data API
 type API' = BasicAPI
        :<|> SwaggerSchemaEndpoint
        :<|> SwaggerUI "ui" SwaggerSchemaEndpoint API
@@ -95,25 +82,6 @@ bookapi = Proxy
 
 api :: Proxy API
 api = Proxy
-
-
-userServer :: ConnectionPool -> String -> Server UserAPI
-userServer pool salt =
-                  hello
-                  :<|> helloUser pool salt
-                  :<|> selectUsersAuth pool salt
-
-bookServer :: ConnectionPool -> String -> Server BookAPI
-bookServer pool salt = showBook pool
-                  :<|> selectBooks pool
-                  :<|> selectBooks pool (Just "title") (Just "") (Just 0) (Just 10)
-                  :<|> createBook pool salt
-                  :<|> updateBook pool salt
-                  :<|> deleteBook pool salt
-
-basicServer :: ConnectionPool -> String -> Server BasicAPI
-basicServer pool salt = userServer pool salt
-                   :<|> bookServer pool salt
 
 server :: ConnectionPool -> String -> Server API
 server pool salt = basicServer pool salt
