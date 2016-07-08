@@ -3,16 +3,13 @@ module Auth.DbAuth where
 
 import Data.Text
 import Database.Persist.MySQL
-import Database.Persist.Sql
 import Control.Monad.IO.Class
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Trans.Except (ExceptT)
-import Servant.API
 import Servant
 
 import Auth.AuthHeader
 
-import Db.Common
 import qualified Db.User as Db
 import qualified Json.User as J
 import qualified Convert.UserConverter as C

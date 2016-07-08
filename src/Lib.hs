@@ -32,7 +32,7 @@ mainFunc :: IO ()
 mainFunc = do
     putStrLn "Starting server..."
     loadedConf <- C.load [C.Required configFileName]
-    maybeConf <- makeDbConfig loadedConf
+    maybeConf  <- makeDbConfig loadedConf
     case maybeConf of
         Nothing -> putStrLn $ "Can't parse \"" ++ configFileName ++ "\" file, terminating!"
         Just conf -> do

@@ -1,6 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
-
 module API where
 
 import Servant.API
@@ -14,8 +13,10 @@ import Data.Proxy
 data API
 
 type UserAPI = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
-               :<|> "hellouser" :> Header "Authorization" Text :> Get '[PlainText] String
-               :<|> Header "Authorization" Text :> Get '[JSON] [User]
+          :<|> "hellouser" :> Header "Authorization" Text :> Get '[PlainText] String
+          :<|> Header "Authorization" Text :> Get '[JSON] [User]
+          -- :<|> "unsafesearch" :> QueryParam "searchField" String :> QueryParam "searchStr" String
+          --   :> QueryParam "offset" Word16 :> QueryParam "limit" Word16 :> Get '[JSON] [User]
 
 type BookAPI = Capture "id" Int :> Get '[JSON] (Maybe Book)
           :<|> "search" :> QueryParam "searchField" String :> QueryParam "searchStr" String
@@ -25,17 +26,16 @@ type BookAPI = Capture "id" Int :> Get '[JSON] (Maybe Book)
           :<|> Header "Authorization" Text :> ReqBody '[JSON] Book :> Put    '[JSON] String
           :<|> Header "Authorization" Text :> Capture "id"    Int  :> Delete '[JSON] String
 
-
 type UsersAPI = "users" :> UserAPI
 type BooksAPI = "books" :> BookAPI
 
 type BasicAPI = UsersAPI :<|> BooksAPI
 
 userapi :: Proxy UserAPI
-userapi = Proxy
+userapi =  Proxy
 
 bookapi :: Proxy BookAPI
-bookapi = Proxy
+bookapi =  Proxy
 
 api :: Proxy API
-api = Proxy
+api =  Proxy

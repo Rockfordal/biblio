@@ -23,17 +23,17 @@ import qualified Convert.UserConverter as C
 import Typer (HelloMessage(..))
 
 
+hello :: Maybe String -> Handler HelloMessage
+hello mname = return . HelloMessage $ case mname of
+  Nothing -> "Hello, anonymous coward"
+  Just n  -> "Hello from Biblio Servant, " ++ n
+
 helloUser :: ConnectionPool -> String -> Maybe Text -> Handler String
 helloUser _pool _salt Nothing = throwError $ err403 { errBody = "No Authorization header found!" }
 helloUser pool salt (Just authHeader) =
     withUser pool authHeader salt $ \user -> do
         return $ show user
         -- liftIO $ print user
-
-hello :: Maybe String -> Handler HelloMessage
-hello mname = return . HelloMessage $ case mname of
-  Nothing -> "Hello, anonymous coward"
-  Just n  -> "Hello from Biblio Servant, " ++ n
 
 createUser :: ConnectionPool -> String -> Maybe Text -> User -> Handler ()
 createUser _ _ Nothing _ = return ()
@@ -101,13 +101,14 @@ selectUsersAuth pool salt (Just authHeader) =
 
 
 selectUsers :: ConnectionPool -> Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> Handler [User]
-selectUsers _ Nothing _ _ _= return []
-selectUsers _ _ Nothing _ _ = return []
+selectUsers _ Nothing _ _ _ = return []
+selectUsers p f Nothing o l = selectUsers p f (Just "") o l
 selectUsers _ _ _ Nothing _ = return []
 selectUsers _ _ _ _ Nothing = return []
 selectUsers pool (Just field) (Just searchStr) (Just offset) (Just limit) = do
     let entityField = case field of
-                        "login" -> DbUser.UserLogin
+                        -- "login" -> DbUser.UserLogin
+                        _ -> DbUser.UserLogin
     if any (not . isAlphaNum) searchStr
         then return []
         else do

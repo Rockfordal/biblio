@@ -3,13 +3,13 @@
 
 module Auth.AuthHeader where
 
-import Network.Wai
-import Network.Wai.Handler.Warp
+-- import Network.Wai
+-- import Network.Wai.Handler.Warp
 import Data.ByteString.Base64 (decodeLenient)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T8
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as C
+-- import qualified Data.ByteString.Char8 as C
 import Data.Word8 (isSpace, _colon, toLower)
 import Data.Hash.MD5
 

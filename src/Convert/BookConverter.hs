@@ -1,13 +1,10 @@
 module Convert.BookConverter where
 
 import Prelude hiding (id)
-import GHC.Generics (Generic)
-import qualified Data.Aeson as A
 
 import Database.Persist.MySQL
 import Data.Text
 
-import Db.Common
 import qualified Db.Book as D
 import Json.Book
 
@@ -24,7 +21,7 @@ toJson :: Entity D.Book -> Maybe Book
 toJson (Entity key (D.Book _title _author _content _year _user_id)) =
     let vals = keyToValues key
     in processKeys vals
-    
+
     where processKeys [pval] =
             let eitherId = fromPersistValue pval :: Either Text Int
             in case eitherId of

@@ -10,10 +10,10 @@ import API
 
 
 userServer :: ConnectionPool -> String -> Server UserAPI
-userServer pool salt =
-                  hello
+userServer pool salt = hello
                   :<|> helloUser pool salt
                   :<|> selectUsersAuth pool salt
+                  -- :<|> selectUsers pool
 
 bookServer :: ConnectionPool -> String -> Server BookAPI
 bookServer pool salt = showBook pool
@@ -25,4 +25,4 @@ bookServer pool salt = showBook pool
 
 basicServer :: ConnectionPool -> String -> Server BasicAPI
 basicServer pool salt = userServer pool salt
-                   :<|> bookServer pool salt
+                  :<|> bookServer pool salt

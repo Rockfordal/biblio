@@ -1,13 +1,10 @@
 module Convert.UserConverter where
 
 import Prelude hiding (id)
-import GHC.Generics (Generic)
-import qualified Data.Aeson as A
 
 import Database.Persist.MySQL
 import Data.Text
 
-import Db.Common
 import qualified Db.User as D
 import Json.User
 

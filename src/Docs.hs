@@ -49,7 +49,7 @@ import Data.Aeson (encode)
 
 
 js :: IO ()
-js = writeJSForAPI bookapi vanillaJS (static </> "vanilla"  </> "api.js")
+js = writeJSForAPI bookapi vanillaJS (static </> "vanilla" </> "api.js")
 
 rubyClient :: Text
 rubyClient = Lackey.rubyForAPI bookapi
@@ -78,15 +78,19 @@ genHello = BL8.putStr $ encode swaggerDoc
 qhello :: Maybe String -> Manager -> BaseUrl -> ClientM HelloMessage
 qhellouser :: Maybe Text -> Manager -> BaseUrl -> ClientM String
 qgetusers :: Maybe Text -> Manager -> BaseUrl -> ClientM [User]
+-- qgetusersnoauth :: Maybe String -> Maybe String -> Maybe Word16 -> Maybe Word16 -> Manager -> BaseUrl -> ClientM [User]
+-- qhello :<|> qhellouser :<|> qgetusers :<|> qgetusersnoauth = client userapi
 qhello :<|> qhellouser :<|> qgetusers = client userapi
 
-queries :: Manager -> BaseUrl -> ExceptT ServantError IO (HelloMessage, String, [User])
+-- queries :: Manager -> BaseUrl -> ExceptT ServantError IO (HelloMessage, String, [User])
+queries :: Manager -> BaseUrl -> ExceptT ServantError IO (HelloMessage, String, [User], [User])
 queries manager baseurl = do
   let auth = Just "Basic dXNlcjpwYXNzd29yZA=="
   msg    <- qhello     (Just "tjena") manager baseurl
   secret <- qhellouser auth manager baseurl
   users  <- qgetusers  auth manager baseurl
-  return (msg, secret, users)
+  uusers <- qgetusers  auth manager baseurl
+  return (msg, secret, users, uusers)
 
 haskell :: IO ()
 haskell = do
@@ -95,10 +99,11 @@ haskell = do
   res <- runExceptT $ queries manager baseUrl
   case res of
     Left err -> putStrLn $ "Error: " ++ show err
-    Right (msg, secret, users) -> do
+    Right (msg, secret, users, uusers) -> do
       print msg
       print secret
       print users
+      print uusers
 
 
 type SwaggerSchemaEndpoint = "swagger.js" :> Get '[JSON] Swagger

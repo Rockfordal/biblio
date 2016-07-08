@@ -24,7 +24,7 @@ import qualified Db.Book as DbBook
 import Json.User (User(User)) -- (User(..))
 import qualified Json.User as JsonUser
 import qualified Convert.BookConverter as C
-import Typer
+-- import Typer
 
 
 createBook :: ConnectionPool -> String -> Maybe Text -> Book -> Handler [Char]
