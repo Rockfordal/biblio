@@ -130,7 +130,7 @@ instance ToSchema Item
 -- instance ToSchema Book
 
 
---- Böcker ---
+--- Parametrar ---
 instance ToParam (QueryParam "limit" Word16) where
   toParam _ = DocQueryParam "limit" ["10", "20"] "Hejlimit" Normal -- List | Flag
 
@@ -148,6 +148,13 @@ instance ToCapture (Capture "id" Int) where
 
 instance ToSample Char where
   toSamples _ = [("apa", 'c')]
+
+-- instance ToSample Int where
+--   toSamples _ = noSamples
+
+-- instance ToSample Book where
+--   toSamples _ = noSamples
+
 
 --- Mockserver ---
 instance Arbitrary HelloMessage where
